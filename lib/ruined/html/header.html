@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html> <head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<meta http-equiv="content-style-type" content="text/css"/>
+<title></title>
+ <link rel="stylesheet" href="../css/smoothness/jquery-ui-1.8.5.custom.css"></link>
+ <script type="text/javascript" src="../js/jquery-1.4.2.min.js"></script>
+ <script type="text/javascript" src="../js/jquery-ui-1.8.5.custom.min.js"></script>
+ <script type="text/javascript">
+$(document).ready(function() {
+  $.ajaxSetup({cache: false});
+  $('button', '.console').button();
+  $('#restart').click(function(event) {
+    $.get('/restart', function(data) {
+      parent.document.getElementById('main').src = 'waitclient.html';
+    });
+  });
+  $('#quit').click(function(event) {
+    $.get('/quit/0', function(data) {
+      parent.window.close();
+    });
+  });
+});
+ </script>
+</head>
+<body>
+<div class="console">
+ <button id="restart">restart</button>
+ <button id="quit">quit</button>
+</div>
+</body> </html>

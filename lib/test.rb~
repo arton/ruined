@@ -1,0 +1,4 @@
+a = 32
+b = a * 5
+puts 'hello'
+puts b.to_s

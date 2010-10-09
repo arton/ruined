@@ -1,0 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
+<html> <head>
+ <meta http-equiv="content-type" content="text/html; charset=utf-i">
+ <meta http-equiv="content-style-type" content="text/css">
+ <title>Ruby visutal debugger</title>
+</head>
+<frameset border="0" frameborder="0" framespacing="0" rows="25,*">
+  <frame id="header" noresize scrolling=no src="header.html" marginheight="0">
+  <frame id="main" name="main" src="waitclient.html">
+</frameset>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html> <head>
+ <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+ <meta http-equiv="content-style-type" content="text/css"/>
+ <title></title>
+ <link rel="stylesheet" href="../css/smoothness/jquery-ui-1.8.5.custom.css"></link>
+ <script type="text/javascript" src="../js/jquery-1.4.2.min.js"></script>
+ <script type="text/javascript" src="../js/jquery-ui-1.8.5.custom.min.js"></script>
+ <script type="text/javascript">
+var files = new Object();
+var priorLine = { line: null, index: null };
+var interval = 5000;
+var contTimer = null;
+function addFile(name, line, command) {
+  var a = name.split('/');
+  $('#tabs').tabs( "add" , '/debug/file/' + name , a[a.length - 1]);
+  var index = $('#tabs').tabs('length') - 1;
+  $('#tabs').tabs('select', index);
+  $('tr').bind('click', function(ev) {
+    alert(ev.currentTarget.innerHTML);
+  });
+  return index;
+}
+function changeTab(index) {
+  $('#tabs').tabs('select', index);
+}
+function lineColor(command) {
+  if (command == 'cont') {
+    return 'yellow';
+  }
+  return 'red';
+}
+function setLine(index, line, command) {
+  if (line > 0) {
+    --line;
+  }
+  if (priorLine.index != null) {
+    $('#ui-tabs-' + (priorLine.index * 2 + 2) + ' > table > tbody > tr > td')[priorLine.line].style.backgroundColor = '';
+  }
+  $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td')[line].style.backgroundColor = lineColor(command);
+  priorLine.index = index;
+  priorLine.line = line;
+}
+function stepProc(command) {
+  $.getJSON('/debug/' + command, function(data) {
+    if (files[data.file] == null) {
+      files[data.file] = addFile(data.file, data.line, command);
+      setLine(files[data.file], data.line, command);
+    } else {
+      changeTab(files[data.file]);
+      setLine(files[data.file], data.line, command);
+    }
+  });
+}
+function contProc(command) {
+  stepProc(command);
+  contTimer = setTimeout('contProc("' + command + '");', interval);
+}
+
+$(document).ready(function() {
+  $('#tabs').tabs();
+  $('#tabs').tabs({ajaxOptions: {async: false}});
+  $('#tabs').tabs('option', 'cache', true);
+  $.ajaxSetup({cache: false});
+
+  $('button', '.console').button();
+  $('#run').click(function() {
+    var lab = 'stop';
+    if (contTimer == null) {
+      contProc('cont');
+    } else {
+      clearTimeout(contTimer);
+      contTimer = null;
+      lab = 'run';
+    }
+    $('#run').button('option', 'label', lab);
+  });
+  $('#step').click(function() {
+    stepProc('cont');
+  });
+  $('#waiting').ajaxError(function() {
+    alert('error');
+  });
+  stepProc('stepping');
+});
+</script>
+<style type="text/css">
+table { padding: 0px ; line-height : 0px }
+pre { padding: 0px ; line-height: 0px; font-size: 11pt }
+</style>
+</head>
+
+<body>
+<div class="console">
+  <button id="run">Run</button>
+  <button id="step">Step</button>
+</div>
+
+<div id="tabs">
+  <ul></ul>
+</div>
+
+<hr>
+<div id="waiting"></div>
+<address></address>
+<!-- hhmts start --> Last modified: Sun Oct 10 02:35:10 +0900 2010 <!-- hhmts end -->
+</body> </html>
