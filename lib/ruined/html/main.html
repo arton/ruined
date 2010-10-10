@@ -9,46 +9,91 @@
  <script type="text/javascript">
 var files = new Object();
 var priorLine = { line: null, index: null };
-var interval = 5000;
+var interval = 1000;
 var contTimer = null;
 function addFile(name, line, command) {
   var a = name.split('/');
   $('#tabs').tabs( "add" , '/debug/file/' + name , a[a.length - 1]);
   var index = $('#tabs').tabs('length') - 1;
   $('#tabs').tabs('select', index);
-  $('tr').bind('click', function(ev) {
-    alert(ev.currentTarget.innerHTML);
+  $('td').bind('click', function(ev) {
+    var sub = 'false';
+    if (ev.currentTarget.style.backgroundColor == '') {
+      sub = 'true';
+    }
+    var index = $('#tabs').tabs('option', 'selected');
+    var key, file;
+    for (key in files) {
+      if (files[key] == index) {
+        file = key;
+        break;
+      }
+    }
+    if (file != null) {
+      var line = 0;
+      var list = $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td');
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] == ev.currentTarget) {
+          line = i + 1;
+          break;
+        }
+      }
+      $.get('/debug/break/' + sub + '/' + file + '/' + line, function() {
+        var bgclr = '';
+        var clr = '';
+        if (sub == 'true') {
+          bgclr = 'saddlebrown';
+          clr = 'white';
+        }
+        ev.currentTarget.style.backgroundColor = bgclr;
+        ev.currentTarget.style.color = clr;
+      });
+    }
   });
   return index;
 }
 function changeTab(index) {
   $('#tabs').tabs('select', index);
 }
-function lineColor(command) {
-  if (command == 'cont') {
-    return 'yellow';
+function lineColor(command, brk) {
+  if (command == 'cont' && !brk) {
+    return 'aquamarine';
   }
-  return 'red';
+  return 'yellow';
 }
-function setLine(index, line, command) {
+function stopRun() {
+  clearTimeout(contTimer);
+  contTimer = null;
+  $('#run').button('option', 'label', 'run');
+}
+function setLine(index, line, command, brk) {
   if (line > 0) {
     --line;
   }
   if (priorLine.index != null) {
-    $('#ui-tabs-' + (priorLine.index * 2 + 2) + ' > table > tbody > tr > td')[priorLine.line].style.backgroundColor = '';
+    var style = $('#ui-tabs-' + (priorLine.index * 2 + 2) + ' > table > tbody > tr > td')[priorLine.line].style;
+    style.backgroundColor = priorLine.backgroundColor;
+    style.color = priorLine.color;
   }
-  $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td')[line].style.backgroundColor = lineColor(command);
+  var style = $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td')[line].style;
   priorLine.index = index;
   priorLine.line = line;
+  priorLine.color = style.color;
+  priorLine.backgroundColor = style.backgroundColor;
+  style.backgroundColor = lineColor(command, brk);
+  style.color = '';
 }
 function stepProc(command) {
   $.getJSON('/debug/' + command, function(data) {
     if (files[data.file] == null) {
       files[data.file] = addFile(data.file, data.line, command);
-      setLine(files[data.file], data.line, command);
+      setLine(files[data.file], data.line, command, data['break']);
     } else {
       changeTab(files[data.file]);
-      setLine(files[data.file], data.line, command);
+      setLine(files[data.file], data.line, command, data['break']);
+    }
+    if (data['break']) {
+      stopRun();
     }
   });
 }
@@ -65,20 +110,20 @@ $(document).ready(function() {
 
   $('button', '.console').button();
   $('#run').click(function() {
-    var lab = 'stop';
     if (contTimer == null) {
       contProc('cont');
+      $('#run').button('option', 'label', 'stop');
     } else {
-      clearTimeout(contTimer);
-      contTimer = null;
-      lab = 'run';
+      stopRun();
     }
-    $('#run').button('option', 'label', lab);
   });
   $('#step').click(function() {
-    stepProc('cont');
+    stepProc('step');
   });
   $('#waiting').ajaxError(function() {
+    if (contTimer != null) {
+      stopRun();
+    }
     alert('error');
   });
   stepProc('stepping');
@@ -103,5 +148,5 @@ pre { padding: 0px ; line-height: 0px; font-size: 11pt }
 <hr>
 <div id="waiting"></div>
 <address></address>
-<!-- hhmts start --> Last modified: Sun Oct 10 02:35:10 +0900 2010 <!-- hhmts end -->
+<!-- hhmts start --> Last modified: Sun Oct 10 12:49:28 +0900 2010 <!-- hhmts end -->
 </body> </html>

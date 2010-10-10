@@ -8,6 +8,7 @@ require 'monitor'
 
 module Ruined
   @queue = [Queue.new, Queue.new]
+  @breakpoints = []
   @monitor = Monitor.new
   include WEBrick
   svr = HTTPServer.new(:Port => 8383,
@@ -23,8 +24,7 @@ module Ruined
       if req.addr[3] == '127.0.0.1'      
         super
       else
-        res.status = 404
-        res.body = '<html>bye</html>'
+        bye(res)
       end
     end
     def do_GET(req, res)
@@ -32,12 +32,22 @@ module Ruined
       if m
         res.body = __send__(m[1].to_sym, *(m[2].split('/')))
       else
-        res.status = 404
-        res.body = '<html>bye</html>'
+        bye(res)        
       end
     end
 
     def break(*a)
+      if a.size < 3
+        bye(response)
+      else
+        point = [a[1..(a.size - 2)].join('/'), a[a.size - 1].to_i]
+        if a[0] == 'true'
+          Ruined.breakpoints << point
+        else
+          Ruined.breakpoints.delete point
+        end
+        JSON(point)
+      end
     end
 
     def run(*a)
@@ -57,6 +67,10 @@ module Ruined
       JSON(Ruined.current)
     end
 
+    def step(*a)
+      cont(a)
+    end
+        
     def file(*a)
       r = '<table>'
       File.open(a.join('/')).each_line do |line|
@@ -68,10 +82,21 @@ module Ruined
     def start(*a)
       '<html>start</html>'
     end
+    
+    private
+    
+    def bye(res)
+      res.status = 404
+      res.body = '<html>bye</html>'
+    end
   end
 
   def self.current
     @current
+  end
+  
+  def self.breakpoints
+    @breakpoints
   end
 
   def self.wait(t)
@@ -124,8 +149,9 @@ module Ruined
   set_trace_func Proc.new {|event, file, line, id, binding, klass|
     unless file =~ /(webrick|internal)/ || main_thread != Thread.current
       if event.index('c-') != 0
+        b = breakpoints.include? [file, line]
         @current = { 'event' => event, 'file' => file, 'line' => line, 
-          'id' => id.to_s }
+          'id' => id.to_s, 'break' => b }
         p @current
         release 1
         wait 0
