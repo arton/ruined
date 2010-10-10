@@ -203,7 +203,7 @@ EOD
   main_thread = Thread.current
 
   set_trace_func Proc.new {|event, file, line, id, binding, klass|
-    unless file =~ /(webrick|internal)/ || main_thread != Thread.current
+    unless file =~ %r#(lib/ruby|webrick|internal)# || main_thread != Thread.current
       if event.index('c-') != 0
         b = breakpoints.include? [file, line]
         @current_binding = binding
