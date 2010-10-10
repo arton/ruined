@@ -14,7 +14,7 @@ var interval = 1000;
 var contTimer = null;
 function addFile(name, line, command) {
   var a = name.split('/');
-  $('#lists').tabs( "add" , '/debug/file/' + name , a[a.length - 1]);
+  $('#lists').tabs('add' , '/debug/file/' + name , a[a.length - 1]);
   var index = $('#lists').tabs('length') - 1;
   $('#lists').tabs('select', index);
   $('td').bind('click', function(ev) {
@@ -83,16 +83,22 @@ function setLine(index, line, command, brk) {
   priorLine.backgroundColor = style.backgroundColor;
   style.backgroundColor = lineColor(command, brk);
   style.color = '';
+  $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td')[line].scrollIntoView(true);
 }
 function stepProc(command) {
   $.getJSON('/debug/' + command, function(data) {
+    if (data == null || data.file == null) {
+      if (contTimer != null) stopRun();
+      $('button').button('disable');
+      return;
+    }
     if (files[data.file] == null) {
       files[data.file] = addFile(data.file, data.line, command);
-      setLine(files[data.file], data.line, command, data['break']);
     } else {
       changeTab(files[data.file]);
-      setLine(files[data.file], data.line, command, data['break']);
     }
+    setLine(files[data.file], data.line, command, data['break']);
+    $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
     if (data['break']) {
       stopRun();
     }
@@ -102,13 +108,19 @@ function contProc(command) {
   stepProc(command);
   contTimer = setTimeout('contProc("' + command + '");', interval);
 }
-
+function initTabs(elm) {
+  elm.tabs();
+  elm.tabs({ajaxOptions: {async: false}});
+  elm.tabs('option', 'cache', true);
+}
 $(document).ready(function() {
-  $('#lists').tabs();
-  $('#lists').tabs({ajaxOptions: {async: false}});
-  $('#lists').tabs('option', 'cache', true);
-  $('#vars').tabs();
-  $('#vars').tabs('option', 'cache', true);
+  initTabs($('#lists'));
+  initTabs($('#vars'));
+  $('#vars').tabs({
+    show: function(envet, ui) {
+      $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
+    }
+  });
   $('#intval').slider();
   $('#intval').slider('option', 'value', 10);
   $('#intval').slider({
@@ -140,9 +152,8 @@ $(document).ready(function() {
 });
 </script>
 </head>
-
 <body>
-<div style="float: left; width: 60%;">
+<div class="list-pane">
   <div style="float: left; width: 40%">
     <div class="console">
       <button id="step">Step</button>
@@ -154,29 +165,26 @@ $(document).ready(function() {
     <div style="float: left; width: 50%">fast &lt;----</div>
     <div style="float: right">----&gt; slow</div>
   </div>
-  <div id="lists" style="clear: both; overflow: scroll;">
+  <div id="lists" style="clear: both">
     <ul></ul>
   </div>
 </div>
-<div>
-  <div id="vars" style="overflow: scroll;">
+<div class="vars-pane">
+  <div id="vars">
     <ul>
-      <li><a href="#local-vars">Local Vars</a></li>
-      <li><a href="#self-vars">Self Vars</a></li>
-      <li><a href="#global-vars">Global Vars</a></li>
+      <li><a href="/debug/locals" title="Local Vars"><span>Local Vars</span></a></li>
+      <li><a href="/debug/self" title="Self Vars"><span>Self Vars</span></a></li>
+      <li><a href="/debug/globals" title="Global Vars"><span>Global Vars</span></a></li>
     </ul>
-    <div id="local-vars">
-    </div>
-    <div id="self-vars">
-    </div>
-    <div id="global-vars">
-    </div>
+    <div id="Local_Vars"></div>
+    <div id="Self_Vars"></div>
+    <div id="Global_Vars"></div>    
   </div>
 </div>
 <div style="clear: both;">
   <hr>
   <div id="waiting"></div>
-  <address></address>
-  <!-- hhmts start --> Last modified: Sun Oct 10 21:36:52 +0900 2010 <!-- hhmts end -->
+  <address id="ruby-platform"></address>
+  <!-- hhmts start --> Last modified: Mon Oct 11 01:15:30 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

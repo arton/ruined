@@ -1,13 +1,36 @@
 
 /* main
    ---- */
-table { 
-  padding: 0px; 
-  line-height : 0px;
-}
 pre { 
   padding: 0px;
   line-height: 0px;
-   font-size: 11pt;
+  font-size: 11pt;
 }
 
+table {
+  border-spacing: 0;
+}
+
+table.vars th {
+  border: 1px solid slategray;
+}
+table.vars td {
+  border: 1px solid slategray;
+}
+
+div.list-pane {
+  float: left; 
+  width: 60%;
+}
+
+div.vars-pnae {
+}
+
+div#lists {
+  overflow: scroll;
+  height: 500px;
+}
+
+div#vars {
+  overflow: scroll;
+}

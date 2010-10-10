@@ -78,7 +78,31 @@ module Ruined
       end.close
       r + '</table>'
     end
+    
+    def locals(*a)
+      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
+      Ruined.local_vars.each do |e|
+        s << "<tr><td>#{escape(e[:name])}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+      end
+      s + '</table>'
+    end
+    
+    def globals(*a)
+      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
+      Ruined.global_vars.each do |e|
+        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+      end
+      s + '</table>'
+    end
 
+    def self(*a)
+      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
+      Ruined.self_vars.each do |e|
+        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+      end
+      s + '</table>'
+    end
+    
     def start(*a)
       '<html>start</html>'
     end
@@ -98,26 +122,56 @@ module Ruined
   def self.breakpoints
     @breakpoints
   end
+  
+  def self.local_vars
+    script = <<EOD
+local_variables.map do |v|
+  (v == :_) ? nil : { :name => v.to_s, :value => eval(v.to_s) }
+end - [nil]
+EOD
+    @current_binding ? eval(script, @current_binding) : []
+  end
+  
+  def self.self_vars
+    script = <<EOD
+instance_variables.map do |v|
+  { :name => v.to_s, :value => instance_eval(v.to_s) }
+end +
+self.class.class_variables.map do |v|
+  { :name => v.to_s, :value => instance_eval(v.to_s) }
+end
+EOD
+    @current_binding ? eval(script, @current_binding) : []
+  end
+  
+  def self.global_vars
+    script = <<EOD
+global_variables.map do |v|
+  (v == :_) ? nil : { :name => v.to_s, :value => eval(v.to_s) }
+end
+EOD
+    eval(script)
+  end
 
   def self.wait(t)
     @monitor.synchronize {        
       unless @queue[t].empty?
         @queue[t].clear
-    p "------------not wait exit #{t}"        
+    p "------------not wait exit #{t}" if $DEBUG       
         return
       end
     }
-    p "------------wait #{t}"
+    p "------------wait #{t}" if $DEBUG
     @queue[t].pop
-    p "------------wait exit #{t}"    
+    p "------------wait exit #{t}" if $DEBUG
   end
 
   def self.release(t)
-    p "------------release #{t}"    
+    p "------------release #{t}" if $DEBUG
     @monitor.synchronize {    
       @queue[t].push nil
     }
-    p "------------release exit #{t}"        
+    p "------------release exit #{t}" if $DEBUG
   end
 
   svr.mount('/debug', DebugServlet)
@@ -150,12 +204,13 @@ module Ruined
     unless file =~ /(webrick|internal)/ || main_thread != Thread.current
       if event.index('c-') != 0
         b = breakpoints.include? [file, line]
+        @current_binding = binding
         @current = { 'event' => event, 'file' => file, 'line' => line, 
           'id' => id.to_s, 'break' => b }
-        p @current
+        p @current if $DEBUG
         release 1
         wait 0
-        p 'continue...'
+        p 'continue...' if $DEBUG
       end
     end
   }
