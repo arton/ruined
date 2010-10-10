@@ -4,6 +4,7 @@
  <meta http-equiv="content-style-type" content="text/css"/>
  <title></title>
  <link rel="stylesheet" href="../css/smoothness/jquery-ui-1.8.5.custom.css"></link>
+ <link rel="stylesheet" href="../css/ruin.css"></link>
  <script type="text/javascript" src="../js/jquery-1.4.2.min.js"></script>
  <script type="text/javascript" src="../js/jquery-ui-1.8.5.custom.min.js"></script>
  <script type="text/javascript">
@@ -13,15 +14,15 @@ var interval = 1000;
 var contTimer = null;
 function addFile(name, line, command) {
   var a = name.split('/');
-  $('#tabs').tabs( "add" , '/debug/file/' + name , a[a.length - 1]);
-  var index = $('#tabs').tabs('length') - 1;
-  $('#tabs').tabs('select', index);
+  $('#lists').tabs( "add" , '/debug/file/' + name , a[a.length - 1]);
+  var index = $('#lists').tabs('length') - 1;
+  $('#lists').tabs('select', index);
   $('td').bind('click', function(ev) {
     var sub = 'false';
     if (ev.currentTarget.style.backgroundColor == '') {
       sub = 'true';
     }
-    var index = $('#tabs').tabs('option', 'selected');
+    var index = $('#lists').tabs('option', 'selected');
     var key, file;
     for (key in files) {
       if (files[key] == index) {
@@ -53,7 +54,7 @@ function addFile(name, line, command) {
   return index;
 }
 function changeTab(index) {
-  $('#tabs').tabs('select', index);
+  $('#lists').tabs('select', index);
 }
 function lineColor(command, brk) {
   if (command == 'cont' && !brk) {
@@ -103,12 +104,21 @@ function contProc(command) {
 }
 
 $(document).ready(function() {
-  $('#tabs').tabs();
-  $('#tabs').tabs({ajaxOptions: {async: false}});
-  $('#tabs').tabs('option', 'cache', true);
+  $('#lists').tabs();
+  $('#lists').tabs({ajaxOptions: {async: false}});
+  $('#lists').tabs('option', 'cache', true);
+  $('#vars').tabs();
+  $('#vars').tabs('option', 'cache', true);
+  $('#intval').slider();
+  $('#intval').slider('option', 'value', 10);
+  $('#intval').slider({
+    change: function(e, ui) {
+      interval = $('#intval').slider('option', 'value') * 100;
+    }
+  });
   $.ajaxSetup({cache: false});
 
-  $('button', '.console').button();
+  $('button').button();
   $('#run').click(function() {
     if (contTimer == null) {
       contProc('cont');
@@ -129,24 +139,44 @@ $(document).ready(function() {
   stepProc('stepping');
 });
 </script>
-<style type="text/css">
-table { padding: 0px ; line-height : 0px }
-pre { padding: 0px ; line-height: 0px; font-size: 11pt }
-</style>
 </head>
 
 <body>
-<div class="console">
-  <button id="run">Run</button>
-  <button id="step">Step</button>
+<div style="float: left; width: 60%;">
+  <div style="float: left; width: 40%">
+    <div class="console">
+      <button id="step">Step</button>
+      <button id="run">Run</button>
+    </div>
+  </div>
+  <div style="float: left; width: 50%;">
+    <div id="intval"></div>
+    <div style="float: left; width: 50%">fast &lt;----</div>
+    <div style="float: right">----&gt; slow</div>
+  </div>
+  <div id="lists" style="clear: both; overflow: scroll;">
+    <ul></ul>
+  </div>
 </div>
-
-<div id="tabs">
-  <ul></ul>
+<div>
+  <div id="vars" style="overflow: scroll;">
+    <ul>
+      <li><a href="#local-vars">Local Vars</a></li>
+      <li><a href="#self-vars">Self Vars</a></li>
+      <li><a href="#global-vars">Global Vars</a></li>
+    </ul>
+    <div id="local-vars">
+    </div>
+    <div id="self-vars">
+    </div>
+    <div id="global-vars">
+    </div>
+  </div>
 </div>
-
-<hr>
-<div id="waiting"></div>
-<address></address>
-<!-- hhmts start --> Last modified: Sun Oct 10 12:49:28 +0900 2010 <!-- hhmts end -->
+<div style="clear: both;">
+  <hr>
+  <div id="waiting"></div>
+  <address></address>
+  <!-- hhmts start --> Last modified: Sun Oct 10 21:36:52 +0900 2010 <!-- hhmts end -->
+</div>    
 </body> </html>

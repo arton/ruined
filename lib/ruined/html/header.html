@@ -9,7 +9,7 @@
  <script type="text/javascript">
 $(document).ready(function() {
   $.ajaxSetup({cache: false});
-  $('button', '.console').button();
+  $('button').button();
   $('#restart').click(function(event) {
     $.get('/restart', function(data) {
       parent.document.getElementById('main').src = 'waitclient.html';
