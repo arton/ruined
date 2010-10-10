@@ -7,6 +7,8 @@ require 'thread'
 require 'monitor'
 
 module Ruined
+  RUINED_VERSION = '0.0.1'
+  
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
   @monitor = Monitor.new
