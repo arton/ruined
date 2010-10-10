@@ -4,7 +4,7 @@
 require 'webrick/log'
 
 def run_app()
-  argv = ['-rruined/ruinmain', $0]
+  argv = ['-d', '-rruined/ruinmain', $0]
   argv += ARGV
   spawn "#{RbConfig::ruby}", *argv
 end
