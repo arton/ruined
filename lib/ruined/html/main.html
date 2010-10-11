@@ -92,6 +92,13 @@ function stepProc(command) {
       $('button').button('disable');
       return;
     }
+    if (data['break'] || data['event'] == 'exit') {
+      stopRun();
+      if (data['event'] == 'exit') {
+        $('button').button('disable');
+        alert('program exit');
+      }
+    }
     if (files[data.file] == null) {
       files[data.file] = addFile(data.file, data.line, command);
     } else {
@@ -105,9 +112,6 @@ function stepProc(command) {
     span = document.createElement('span');
     $('#stdout')[0].appendChild(span);
     span.scrollIntoView(true);
-    if (data['break']) {
-      stopRun();
-    }
   });
 }
 function contProc(command) {
@@ -152,7 +156,11 @@ $(document).ready(function() {
     if (contTimer != null) {
       stopRun();
     }
-    alert('error');
+    $('#vars').tabs({
+      show: function(envet, ui) {
+        alert('program terminated');
+      }
+    });
   });
   stepProc('stepping');
 });
@@ -194,6 +202,6 @@ $(document).ready(function() {
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Mon Oct 11 12:42:26 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Mon Oct 11 17:22:50 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

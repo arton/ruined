@@ -13,6 +13,9 @@ module Ruined
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
   @monitor = Monitor.new
+  @tlses = { '$!' => nil, '$?' => nil, '$@' => nil, '$SAFE' => nil}
+  IGNORES = [:$&, :$', :$+, :$_, :$`, :$~, :$KCODE, :$= ]
+  
   include WEBrick
   svr = HTTPServer.new(:Port => 8383,
                        :ServerType => Thread,
@@ -86,7 +89,7 @@ module Ruined
     def locals(*a)
       s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
       Ruined.local_vars.each do |e|
-        s << "<tr><td>#{escape(e[:name])}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+        s << "<tr><td>#{escape(e[:name])}</td><td>#{escape(e[:value].inspect)}</td></tr>"
       end
       s + '</table>'
     end
@@ -94,7 +97,7 @@ module Ruined
     def globals(*a)
       s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
       Ruined.global_vars.each do |e|
-        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].inspect)}</td></tr>"
       end
       s + '</table>'
     end
@@ -102,7 +105,7 @@ module Ruined
     def self(*a)
       s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
       Ruined.self_vars.each do |e|
-        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].to_s)}</td></tr>"
+        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].inspect)}</td></tr>"
       end
       s + '</table>'
     end
@@ -151,11 +154,25 @@ EOD
   
   def self.global_vars
     script = <<EOD
-global_variables.map do |v|
-  (v == :_) ? nil : { :name => v.to_s, :value => eval(v.to_s) }
-end
+(global_variables - Ruined::IGNORES).map do |v|
+  if v.to_s =~ /\\A\\$[1-9]/
+    nil
+  else
+    { :name => v.to_s, :value => eval(v.to_s) }
+  end
+end - [nil]
 EOD
-    eval(script)
+    a = eval(script)
+    0.upto(a.size - 1) do |i|
+      if @tlses.has_key?(a[i][:name])
+        a[i][:value] = @tlses[a[i][:name]]
+      end
+    end
+    a
+  end
+  
+  def self.tls_vars
+    @@tlses
   end
 
   def self.wait(t)
@@ -228,6 +245,9 @@ EOD
         if file == $0 && !$stdout.instance_of?(StringIO)
           $stdout = StringIO.new
         end
+        @tlses.each do |k, v|
+          @tlses[k] = eval(k)
+        end
         b = breakpoints.include? [file, line]
         @current_binding = binding
         @current = { 'event' => event, 'file' => file, 'line' => line, 
@@ -237,6 +257,14 @@ EOD
         wait 0
         svr.logger.debug('continue...')
       end
+    end
+  }
+  at_exit { 
+    if @current
+      @current['event'] = 'exit'
+      @current['stdout'] = output
+      release 1
+      wait 0
     end
   }
 end
