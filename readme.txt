@@ -2,6 +2,9 @@ Ruined
 
 Ruined is a browser base debugger, using pure ruby script and javascript.
 
+flash demo:
+ http://www.artonx.org/diary/20101011.html#p01
+
 features:
  - step
  - auto run
