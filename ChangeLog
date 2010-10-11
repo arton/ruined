@@ -1,3 +1,7 @@
+Mon Oct 11 21:25:00 2010 arton		
+ * lib/ruined/ruinmain.rb
+	fix local vairable confliction with 'v'
+	change version => 0.0.3 for new gem
 Mon Oct 11 18:38:00 2010 arton	
  * lib/ruined/ruinmain.rb
 	change version => 0.0.2 for new gem

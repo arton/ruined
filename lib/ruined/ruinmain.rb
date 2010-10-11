@@ -8,7 +8,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.2'
+  RUINED_VERSION = '0.0.3'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
@@ -132,8 +132,8 @@ module Ruined
   
   def self.local_vars
     script = <<EOD
-local_variables.map do |v|
-  (v == :_) ? nil : { :name => v.to_s, :value => eval(v.to_s) }
+local_variables.map do |_0|
+  (_0 == :_) ? nil : { :name => _0.to_s, :value => eval(_0.to_s) }
 end - [nil]
 EOD
     @current_binding ? eval(script, @current_binding) : []
