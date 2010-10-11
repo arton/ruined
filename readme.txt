@@ -14,6 +14,11 @@ features:
  - self's instance variables viewer
  - stdout viewer
 
+ todo:
+  - change variable's value
+  - more inspection 
+  - editing source and save
+
 usage:
 
 simply add '-ruined' for your command line.
