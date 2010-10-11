@@ -5,6 +5,7 @@ require 'webrick'
 require 'json'
 require 'thread'
 require 'monitor'
+require 'stringio'
 
 module Ruined
   RUINED_VERSION = '0.0.1'
@@ -15,6 +16,7 @@ module Ruined
   include WEBrick
   svr = HTTPServer.new(:Port => 8383,
                        :ServerType => Thread,
+                       :Logger => ($DEBUG) ? Log.new(nil, BasicLog::DEBUG) : Log.new,
                        :DocumentRoot => File.dirname(__FILE__))
   trap('INT') do 
     svr.shutdown
@@ -136,6 +138,7 @@ EOD
   
   def self.self_vars
     script = <<EOD
+[{ :name => 'class', :value => self.class.to_s }] +
 instance_variables.map do |v|
   { :name => v.to_s, :value => instance_eval(v.to_s) }
 end +
@@ -159,21 +162,33 @@ EOD
     @monitor.synchronize {        
       unless @queue[t].empty?
         @queue[t].clear
-    p "------------not wait exit #{t}" if $DEBUG       
+        logger.debug("------------not wait exit #{t}")
         return
       end
     }
-    p "------------wait #{t}" if $DEBUG
+    logger.debug("------------wait #{t}")
     @queue[t].pop
-    p "------------wait exit #{t}" if $DEBUG
+    logger.debug("------------wait exit #{t}")
   end
 
   def self.release(t)
-    p "------------release #{t}" if $DEBUG
+    logger.debug("------------release #{t}")
     @monitor.synchronize {    
       @queue[t].push nil
     }
-    p "------------release exit #{t}" if $DEBUG
+    logger.debug("------------release exit #{t}")
+  end
+  
+  def self.output
+    return '' unless StringIO === $stdout
+    out = $stdout
+    $stdout = StringIO.new
+    out.pos = 0
+    ret = ''
+    out.each_line do |x|
+      ret << "#{x.chomp}<br/>"
+    end
+    ret
   end
 
   svr.mount('/debug', DebugServlet)
@@ -197,6 +212,11 @@ EOD
       res.status = 404
     end
   end
+  
+  define_method(:logger) do
+    return svr.logger
+  end
+  module_function(:logger)
 
   svr.start
 
@@ -205,14 +225,17 @@ EOD
   set_trace_func Proc.new {|event, file, line, id, binding, klass|
     unless file =~ %r#(lib/ruby|webrick|internal)# || main_thread != Thread.current
       if event.index('c-') != 0
+        if file == $0 && !$stdout.instance_of?(StringIO)
+          $stdout = StringIO.new
+        end
         b = breakpoints.include? [file, line]
         @current_binding = binding
         @current = { 'event' => event, 'file' => file, 'line' => line, 
-          'id' => id.to_s, 'break' => b }
-        p @current if $DEBUG
+          'id' => id.to_s, 'break' => b, 'stdout' => output }
+        svr.logger.debug(@current.inspect)
         release 1
         wait 0
-        p 'continue...' if $DEBUG
+        svr.logger.debug('continue...')
       end
     end
   }
