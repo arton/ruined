@@ -1,3 +1,6 @@
+Mon Oct 11 18:38:00 2010 arton	
+ * lib/ruined/ruinmain.rb
+	change version => 0.0.2 for new gem
 Mon Oct 11 15:51:00 2010 arton
 	start brwoser (suggested by knu and n0kada, thanks)
 Mon Oct 11 01:37:00 2010 arton
