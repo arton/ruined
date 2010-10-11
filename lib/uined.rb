@@ -78,7 +78,9 @@ else
     elsif RUBY_PLATFORM =~ /cygwin/  
       system('cygstart http://localhost.:8384/html/index.html')      
     else
-      system('open http://localhost.:8384/html/index.html')
+      unless system('open', 'http://localhost.:8384/html/index.html')
+        $stderr.puts 'open http://localhost:8384/ on your web browser'
+      end
     end
   end
   svr.start
