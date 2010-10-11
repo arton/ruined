@@ -26,9 +26,9 @@ spec = Gem::Specification.new do |s|
   s.version = read_version
   s.requirements << 'none'
   s.require_path = 'lib'
-  files = FileList['lib/ruined/*.rb', 'lib/uined.rb', 'test/*.rb',
+  files = FileList['lib/ruined/*.rb', 'lib/uined*.rb', 'test/*.rb',
                    'lib/ruined/html/**/*.html', 
-                   'lib/ruined/css/**/*.css',
+                   'lib/ruined/css/**/*.css', 'lib/ruined/css/**/*.png',
                    'lib/ruined/js/**/*.js',
                    '*.txt', 'ChangeLog']
   s.files = files
