@@ -4,7 +4,8 @@
 require 'webrick/log'
 
 def run_app()
-  argv = ['-rruined/ruinmain', $0]
+  argv = $DEBUG ? ['-d'] : []
+  argv += ['-rruined/ruinmain', $0]
   argv += ARGV
   spawn "#{RbConfig::ruby}", *argv
 end
@@ -74,6 +75,10 @@ else
     run_app
     if RUBY_PLATFORM =~ /win32/
       system('start http://localhost.:8384/html/index.html')
+    elsif RUBY_PLATFORM =~ /cygwin/  
+      system('cygstart http://localhost.:8384/html/index.html')      
+    else
+      system('open http://localhost.:8384/html/index.html')
     end
   end
   svr.start
