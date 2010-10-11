@@ -99,6 +99,12 @@ function stepProc(command) {
     }
     setLine(files[data.file], data.line, command, data['break']);
     $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
+    var span = document.createElement('span');
+    span.innerHTML = data.stdout;
+    $('#stdout')[0].appendChild(span);
+    span = document.createElement('span');
+    $('#stdout')[0].appendChild(span);
+    span.scrollIntoView(true);
     if (data['break']) {
       stopRun();
     }
@@ -154,13 +160,13 @@ $(document).ready(function() {
 </head>
 <body>
 <div class="list-pane">
-  <div style="float: left; width: 40%">
+  <div id="button-panel">
     <div class="console">
       <button id="step">Step</button>
       <button id="run">Run</button>
     </div>
   </div>
-  <div style="float: left; width: 50%;">
+  <div id="speed-panel">
     <div id="intval"></div>
     <div style="float: left; width: 50%">fast &lt;----</div>
     <div style="float: right">----&gt; slow</div>
@@ -182,9 +188,12 @@ $(document).ready(function() {
   </div>
 </div>
 <div style="clear: both;">
+  <div id="output">
+    <span id="stdout"></span>
+  </div>
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Mon Oct 11 01:15:30 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Mon Oct 11 12:42:26 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

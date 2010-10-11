@@ -5,6 +5,8 @@ pre {
   padding: 0px;
   line-height: 0px;
   font-size: 11pt;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 
 table {
@@ -13,9 +15,11 @@ table {
 
 table.vars th {
   border: 1px solid slategray;
+  font-size: 11pt;
 }
 table.vars td {
   border: 1px solid slategray;
+  font-size: 11pt;
 }
 
 div.list-pane {
@@ -26,11 +30,29 @@ div.list-pane {
 div.vars-pnae {
 }
 
+div#button-panel {
+  float: left;
+  width: 40%;
+  height: 40px
+}
+
+div#speed-panel {
+  float: left;
+  width: 50%; 
+  height: 40px
+}
+
 div#lists {
   overflow: scroll;
-  height: 500px;
+  height: 480px;
 }
 
 div#vars {
   overflow: scroll;
+  height: 520px;
+}
+
+div#output {
+  overflow: scroll;
+  height: 120px;
 }
