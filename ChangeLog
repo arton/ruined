@@ -1,3 +1,11 @@
+Tue Oct 12 00:17:00 2010 arton	
+ * BSDL
+ * readme.txt
+	license changed to dual (BSDL or (GPLv3 or later))
+ * ruined/html/main.html
+	support variable modification
+ * ruined/ruinmain.rb
+	support variable modification
 Mon Oct 11 21:25:00 2010 arton		
  * lib/ruined/ruinmain.rb
 	fix local vairable confliction with 'v'

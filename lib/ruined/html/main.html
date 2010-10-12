@@ -96,6 +96,11 @@ function stepProc(command) {
       stopRun();
       if (data['event'] == 'exit') {
         $('button').button('disable');
+        $('#vars').tabs({
+          show: function(envet, ui) {
+            alert('program terminated');
+          }
+        });
         alert('program exit');
       }
     }
@@ -129,6 +134,29 @@ $(document).ready(function() {
   $('#vars').tabs({
     show: function(envet, ui) {
       $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
+    },
+    load: function(event, ui) {
+      $('.var-value').dblclick(function(e) {
+        var v = e.currentTarget.innerHTML;
+        e.currentTarget.innerHTML = '<input type="text" value="' + v + '"/>';
+        setTimeout(function() {
+          e.currentTarget.childNodes.item(0).focus();
+          $(e.currentTarget.childNodes.item(0)).focusout(function(ev) {
+            var loc = 'locals/';
+            if ($('#vars').tabs('option', 'selected') == 1) {
+              loc = 'self/';
+            } else if ($('#vars').tabs('option', 'selected') == 2) {
+              loc = 'globals/';
+            }
+            var url = '/debug/' + loc + e.currentTarget.previousSibling.innerHTML 
+                     + '/' + ev.currentTarget.value;
+            e.currentTarget.innerHTML = ev.currentTarget.value;
+            $.get(url, function() {
+              $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
+            });
+          });
+         }, 0);
+      });
     }
   });
   $('#intval').slider();
@@ -156,11 +184,6 @@ $(document).ready(function() {
     if (contTimer != null) {
       stopRun();
     }
-    $('#vars').tabs({
-      show: function(envet, ui) {
-        alert('program terminated');
-      }
-    });
   });
   stepProc('stepping');
 });
@@ -202,6 +225,6 @@ $(document).ready(function() {
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Mon Oct 11 17:22:50 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Wed Oct 13 00:12:03 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

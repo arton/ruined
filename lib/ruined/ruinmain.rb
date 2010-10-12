@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby -Ku
+#!/usr/local/bin/ruby
 # coding: utf-8
 
 require 'webrick'
@@ -8,7 +8,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.3'
+  RUINED_VERSION = '0.0.4'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
@@ -87,27 +87,33 @@ module Ruined
     end
     
     def locals(*a)
-      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
-      Ruined.local_vars.each do |e|
-        s << "<tr><td>#{escape(e[:name])}</td><td>#{escape(e[:value].inspect)}</td></tr>"
+      if a.size == 0
+        create_varlist Ruined.local_vars
+      elsif a.size != 2
+        bye(response)
+      else
+        Ruined.set(a[0], a[1]).to_s
       end
-      s + '</table>'
     end
     
     def globals(*a)
-      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
-      Ruined.global_vars.each do |e|
-        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].inspect)}</td></tr>"
+      if a.size == 0
+        create_varlist Ruined.global_vars
+      elsif a.size != 2
+        bye(response)
+      else
+        Ruined.set(a[0], a[1]).to_s
       end
-      s + '</table>'
     end
 
     def self(*a)
-      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
-      Ruined.self_vars.each do |e|
-        s << "<tr><td>#{e[:name]}</td><td>#{escape(e[:value].inspect)}</td></tr>"
+      if a.size == 0
+        create_varlist Ruined.self_vars
+      elsif a.size != 2
+        bye(response)
+      else
+        Ruined.set(a[0], a[1]).to_s
       end
-      s + '</table>'
     end
     
     def start(*a)
@@ -115,6 +121,14 @@ module Ruined
     end
     
     private
+    
+    def create_varlist(t)
+      s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
+      t.each do |e|
+        s << "<tr><td>#{e[:name]}</td><td class=\"var-value\">#{escape(e[:value].inspect)}</td></tr>"
+      end
+      s + '</table>'
+    end
     
     def bye(res)
       res.status = 404
@@ -169,6 +183,10 @@ EOD
       end
     end
     a
+  end
+  
+  def self.set(var, val)
+    eval("#{var} = #{val}", @current_binding)
   end
   
   def self.tls_vars
