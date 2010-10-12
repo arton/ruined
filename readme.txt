@@ -26,7 +26,7 @@ cf)
 ruby -ruined target.rb [ target's options ...]
 
 licence:
- BSDL or GPL3
+ Simplified BSDL or (GPL3 or any later version)
 
 others:
  jQuery (bundled)
