@@ -13,9 +13,9 @@ features:
  - global variables viewer
  - self's instance variables viewer
  - stdout viewer
+ - change variable's value
 
  todo:
-  - change variable's value
   - more inspection 
   - editing source and save
 
