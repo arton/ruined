@@ -9,14 +9,32 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.5'
+  RUINED_VERSION = '0.0.6'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
   @monitor = Monitor.new
   @tlses = { '$!' => nil, '$?' => nil, '$@' => nil, '$SAFE' => nil}
   IGNORES = [:$&, :$', :$+, :$_, :$`, :$~, :$KCODE, :$= ]
+  @unbreakable_threads = []
   
+  class <<Thread
+    alias :_original_start :start
+    def start(&proc)
+      webrick = caller.first.include?('webrick')
+      $stderr.puts "caller=#{caller[2]}, webrick=#{webrick}"
+      $stderr.flush
+      _original_start do
+        Ruined.add_unbreakable(Thread.current) if webrick
+        begin
+          proc.call
+        ensure
+          Ruined.remove_unbreakable(Thread.current) if webrick    
+        end
+      end  
+    end
+  end
+
   include WEBrick
   svr = HTTPServer.new(:Port => 8383,
                        :ServerType => Thread,
@@ -203,13 +221,6 @@ EOD
   end
 
   def self.wait(t)
-    @monitor.synchronize {        
-      unless @queue[t].empty?
-        @queue[t].clear
-        logger.debug("------------not wait exit #{t}")
-        return
-      end
-    }
     logger.debug("------------wait #{t}")
     @queue[t].pop
     logger.debug("------------wait exit #{t}")
@@ -233,6 +244,24 @@ EOD
       ret << "#{HTMLUtils.escape(x.chomp)}<br/>"
     end
     ret
+  end
+  
+  def self.add_unbreakable(t)
+    @monitor.synchronize {
+      @unbreakable_threads << t
+    }
+  end
+  
+  def self.remove_unbreakable(t)
+    @monitor.synchronize {
+      @unbreakable_threads.delete t
+    }
+  end
+  
+  def self.unbreakable?(t)
+    @monitor.synchronize {
+      @unbreakable_threads.include? t
+    }
   end
 
   svr.mount('/debug', DebugServlet)
@@ -264,10 +293,8 @@ EOD
 
   svr.start
 
-  main_thread = Thread.current
-
   set_trace_func Proc.new {|event, file, line, id, binding, klass|
-    unless file =~ %r#(lib/ruby|webrick|internal)# || main_thread != Thread.current
+    unless file =~ %r#(lib/ruby|ruinmain|webrick|internal)# || unbreakable?(Thread.current)
       if event.index('c-') != 0
         if file == $0 && !$stdout.instance_of?(StringIO)
           $stdout = StringIO.new

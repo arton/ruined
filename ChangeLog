@@ -1,4 +1,8 @@
-Tue Oct 13 21:01:00 2010 arton
+Wed Oct 13 22:39:00 2010 arton
+ * ruined/ruinmain.rb
+	version 0.0.5 => 0.0.6
+	support multi-thread app (but very limited)
+Wed Oct 13 21:01:00 2010 arton
  * Rakefile
 	add BSDL into gem
  * ruined/html/main.html
