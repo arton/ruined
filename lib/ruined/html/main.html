@@ -148,8 +148,9 @@ $(document).ready(function() {
             } else if ($('#vars').tabs('option', 'selected') == 2) {
               loc = 'globals/';
             }
-            var url = '/debug/' + loc + e.currentTarget.previousSibling.innerHTML 
-                     + '/' + ev.currentTarget.value;
+            var url = '/debug/' + loc
+                     + encodeURIComponent(e.currentTarget.previousSibling.innerHTML)
+                     + '/' + encodeURIComponent(ev.currentTarget.value);
             e.currentTarget.innerHTML = ev.currentTarget.value;
             $.get(url, function() {
               $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
@@ -225,6 +226,6 @@ $(document).ready(function() {
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Wed Oct 13 00:12:03 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Wed Oct 13 11:09:42 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>
