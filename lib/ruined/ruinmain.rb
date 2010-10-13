@@ -9,7 +9,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.4'
+  RUINED_VERSION = '0.0.5'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []

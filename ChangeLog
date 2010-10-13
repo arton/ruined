@@ -1,3 +1,12 @@
+Tue Oct 13 21:01:00 2010 arton
+ * Rakefile
+	add BSDL into gem
+ * ruined/html/main.html
+	escape modified value
+ * ruined/ruinmain.rb
+	version 0.0.4 => 0.0.5
+	escape stdout
+	unescape modified value
 Tue Oct 12 00:17:00 2010 arton	
  * BSDL
  * readme.txt

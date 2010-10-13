@@ -30,7 +30,7 @@ spec = Gem::Specification.new do |s|
                    'lib/ruined/index.html', 'lib/ruined/html/**/*.html', 
                    'lib/ruined/css/**/*.css', 'lib/ruined/css/**/*.png',
                    'lib/ruined/js/**/*.js',
-                   '*.txt', 'ChangeLog']
+                   '*.txt', 'BSDL', 'ChangeLog']
   s.files = files
   s.test_file = 'test/test.rb'
   s.description = <<EOD
