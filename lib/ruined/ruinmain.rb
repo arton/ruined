@@ -2,6 +2,7 @@
 # coding: utf-8
 
 require 'webrick'
+require 'uri'
 require 'json'
 require 'thread'
 require 'monitor'
@@ -35,13 +36,17 @@ module Ruined
       end
     end
     def do_GET(req, res)
-      m = %r|/debug/([^/]+)/?(.*)\Z|.match(req.path)
+      m = %r|/debug/([^/?]+)/?([^?]*).*\Z|.match(req.unparsed_uri)
       if m
-        res.body = __send__(m[1].to_sym, *(m[2].split('/')))
+        @response = res
+        res.body = __send__(m[1].to_sym, *(m[2].split('/').map{|x|URI.decode(x)}))
       else
         bye(res)        
       end
+      @response = nil
     end
+
+    attr_reader :response
 
     def break(*a)
       if a.size < 3
@@ -89,30 +94,26 @@ module Ruined
     def locals(*a)
       if a.size == 0
         create_varlist Ruined.local_vars
-      elsif a.size != 2
-        bye(response)
       else
-        Ruined.set(a[0], a[1]).to_s
+        eval_var(a)
       end
     end
     
     def globals(*a)
       if a.size == 0
         create_varlist Ruined.global_vars
-      elsif a.size != 2
-        bye(response)
       else
-        Ruined.set(a[0], a[1]).to_s
+        eval_var(a)
       end
     end
 
     def self(*a)
       if a.size == 0
         create_varlist Ruined.self_vars
-      elsif a.size != 2
+      elsif a.size < 2
         bye(response)
       else
-        Ruined.set(a[0], a[1]).to_s
+        eval_var(a)
       end
     end
     
@@ -128,6 +129,14 @@ module Ruined
         s << "<tr><td>#{e[:name]}</td><td class=\"var-value\">#{escape(e[:value].inspect)}</td></tr>"
       end
       s + '</table>'
+    end
+
+    def eval_var(a)
+      if a.size < 2
+        bye(response)
+      else
+        Ruined.set(a[0], a[1..-1].join('/')).to_s
+      end
     end
     
     def bye(res)
@@ -221,7 +230,7 @@ EOD
     out.pos = 0
     ret = ''
     out.each_line do |x|
-      ret << "#{x.chomp}<br/>"
+      ret << "#{HTMLUtils.escape(x.chomp)}<br/>"
     end
     ret
   end
@@ -286,4 +295,3 @@ EOD
     end
   }
 end
-
