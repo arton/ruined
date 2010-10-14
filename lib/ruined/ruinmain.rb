@@ -9,7 +9,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.6'
+  RUINED_VERSION = '0.0.7'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
@@ -66,7 +66,7 @@ module Ruined
   class DebugServlet <  HTTPServlet::AbstractServlet
     include WEBrick::HTMLUtils
     def service(req, res)
-      if req.addr[3] == '127.0.0.1'      
+      if Ruined.local_call?(req.addr)
         super
       else
         bye(res)
@@ -183,6 +183,7 @@ module Ruined
   end
 
   def self.current_context
+    # assert @current
     @current.to_hash
   end
   
@@ -196,7 +197,7 @@ local_variables.map do |_0|
   (_0 == :_) ? nil : { :name => _0.to_s, :value => eval(_0.to_s) }
 end - [nil]
 EOD
-    @current.binding ? eval(script, @current.binding) : []
+    (@current) ? eval(script, @current.binding) : []
   end
   
   def self.self_vars
@@ -209,7 +210,7 @@ self.class.class_variables.map do |v|
   { :name => v.to_s, :value => instance_eval(v.to_s) }
 end
 EOD
-    @current.binding ? eval(script, @current.binding) : []
+    (@current) ? eval(script, @current.binding) : []    
   end
   
   def self.global_vars
@@ -223,9 +224,11 @@ EOD
 end - [nil]
 EOD
     a = eval(script)
-    0.upto(a.size - 1) do |i|
-      if @current.tlses.has_key?(a[i][:name])
-        a[i][:value] = @current.tlses[a[i][:name]]
+    if @current
+      0.upto(a.size - 1) do |i|
+        if @current.tlses.has_key?(a[i][:name])
+          a[i][:value] = @current.tlses[a[i][:name]]
+        end
       end
     end
     a
@@ -236,6 +239,7 @@ EOD
   end
   
   def self.wait(t)
+    return unless @queue    
     logger.debug("------------wait #{t}")
     o = @queue[t].pop
     if t == 1
@@ -245,6 +249,7 @@ EOD
   end
 
   def self.release(t, obj = nil)
+    return unless @queue
     logger.debug("------------release #{t}")
     @monitor.synchronize {    
       @queue[t].push obj
@@ -281,10 +286,14 @@ EOD
       @unbreakable_threads.include? t
     }
   end
+  
+  def self.local_call?(addr)
+    ['127.0.0.1', '::1'].include?(addr[3])
+  end
 
   svr.mount('/debug', DebugServlet)
   svr.mount_proc('/quit') do |req, res|
-    if req.addr[3] == '127.0.0.1'
+    if local_call?(req.addr)
       set_trace_func(nil)
       c = 0
       if req.path =~ %r|/(\d+)|
