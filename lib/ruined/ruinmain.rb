@@ -14,7 +14,6 @@ module Ruined
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
   @monitor = Monitor.new
-  @tlses = { '$!' => nil, '$?' => nil, '$@' => nil, '$SAFE' => nil}
   IGNORES = [:$&, :$', :$+, :$_, :$`, :$~, :$KCODE, :$= ]
   @unbreakable_threads = []
   
@@ -33,6 +32,26 @@ module Ruined
         end
       end  
     end
+  end
+  
+  class Context
+    TLSES = ['$!', '$?', '$@', '$SAFE']
+    def initialize(e, f, l, id, bnd, b, s)
+      @event = e
+      @file = f
+      @line = l
+      @iid = id.to_s
+      @break = b
+      @binding = bnd
+      @stdout = s
+      @tlses = Hash[*(TLSES.map{|k| [k, eval(k)]}.flatten(1))]
+    end
+    def to_hash
+      { :event => @event, :file => @file, :line => @line, :id => @iid, :break => @break,
+        :stdout => @stdout }
+    end
+    attr_reader :tlses, :file, :line, :iid, :binding, :break
+    attr_accessor :event, :stdout
   end
 
   include WEBrick
@@ -88,13 +107,13 @@ module Ruined
 
     def stepping(*a)
       Ruined.wait 1      
-      JSON(Ruined.current)
+      JSON(Ruined.current_context)
     end
 
     def cont(*a)
       Ruined.release 0
       Ruined.wait 1
-      JSON(Ruined.current)
+      JSON(Ruined.current_context)
     end
 
     def step(*a)
@@ -163,8 +182,8 @@ module Ruined
     end
   end
 
-  def self.current
-    @current
+  def self.current_context
+    @current.to_hash
   end
   
   def self.breakpoints
@@ -177,7 +196,7 @@ local_variables.map do |_0|
   (_0 == :_) ? nil : { :name => _0.to_s, :value => eval(_0.to_s) }
 end - [nil]
 EOD
-    @current_binding ? eval(script, @current_binding) : []
+    @current.binding ? eval(script, @current.binding) : []
   end
   
   def self.self_vars
@@ -190,7 +209,7 @@ self.class.class_variables.map do |v|
   { :name => v.to_s, :value => instance_eval(v.to_s) }
 end
 EOD
-    @current_binding ? eval(script, @current_binding) : []
+    @current.binding ? eval(script, @current.binding) : []
   end
   
   def self.global_vars
@@ -205,31 +224,30 @@ end - [nil]
 EOD
     a = eval(script)
     0.upto(a.size - 1) do |i|
-      if @tlses.has_key?(a[i][:name])
-        a[i][:value] = @tlses[a[i][:name]]
+      if @current.tlses.has_key?(a[i][:name])
+        a[i][:value] = @current.tlses[a[i][:name]]
       end
     end
     a
   end
   
   def self.set(var, val)
-    eval("#{var} = #{val}", @current_binding)
+    eval("#{var} = #{val}", @current.binding)
   end
   
-  def self.tls_vars
-    @@tlses
-  end
-
   def self.wait(t)
     logger.debug("------------wait #{t}")
-    @queue[t].pop
+    o = @queue[t].pop
+    if t == 1
+      @current = o
+    end
     logger.debug("------------wait exit #{t}")
   end
 
-  def self.release(t)
+  def self.release(t, obj = nil)
     logger.debug("------------release #{t}")
     @monitor.synchronize {    
-      @queue[t].push nil
+      @queue[t].push obj
     }
     logger.debug("------------release exit #{t}")
   end
@@ -299,15 +317,12 @@ EOD
         if file == $0 && !$stdout.instance_of?(StringIO)
           $stdout = StringIO.new
         end
-        @tlses.each do |k, v|
-          @tlses[k] = eval(k)
-        end
         b = breakpoints.include? [file, line]
-        @current_binding = binding
-        @current = { 'event' => event, 'file' => file, 'line' => line, 
-          'id' => id.to_s, 'break' => b, 'stdout' => output }
-        svr.logger.debug(@current.inspect)
-        release 1
+        ctxt = @monitor.synchronize {            
+          Context.new(event, file, line, id, binding, b, output)
+        }
+        svr.logger.debug(ctxt.inspect)
+        release 1, ctxt
         wait 0
         svr.logger.debug('continue...')
       end
@@ -315,9 +330,9 @@ EOD
   }
   at_exit { 
     if @current
-      @current['event'] = 'exit'
-      @current['stdout'] = output
-      release 1
+      @current.event = 'exit'
+      @current.stdout = output
+      release 1, @current #reschedule
       wait 0
     end
   }
