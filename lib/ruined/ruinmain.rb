@@ -9,14 +9,15 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.7'
+  RUINED_VERSION = '0.0.8'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
   @monitor = Monitor.new
   IGNORES = [:$&, :$', :$+, :$_, :$`, :$~, :$KCODE, :$= ]
   @unbreakable_threads = []
-  
+  @user_threads = { }
+
   class <<Thread
     alias :_original_start :start
     def start(&proc)
@@ -48,7 +49,7 @@ module Ruined
     end
     def to_hash
       { :event => @event, :file => @file, :line => @line, :id => @iid, :break => @break,
-        :stdout => @stdout }
+        :stdout => @stdout, :threads => Ruined.user_threads(self) }
     end
     attr_reader :tlses, :file, :line, :iid, :binding, :break
     attr_accessor :event, :stdout
@@ -183,7 +184,7 @@ module Ruined
   end
 
   def self.current_context
-    # assert @current
+    raise RuntimeException.new('bug: no context !!') unless @current
     @current.to_hash
   end
   
@@ -290,6 +291,28 @@ EOD
   def self.local_call?(addr)
     ['127.0.0.1', '::1'].include?(addr[3])
   end
+  
+  def self.user_threads(current)
+    r = []
+    @monitor.synchronize {                
+      @user_threads.each do |t, c|
+        r << [:file => File.basename(c.file), :line => c.line, 
+              :self => (c == current),
+              :status => status_to_s(t.status)]
+      end
+      r
+    }
+  end
+  
+  def self.status_to_s(s)
+    if s.nil?
+      'dead'
+    elsif s == false
+      'aborted'
+    else
+      s
+    end
+  end
 
   svr.mount('/debug', DebugServlet)
   svr.mount_proc('/quit') do |req, res|
@@ -328,7 +351,7 @@ EOD
         end
         b = breakpoints.include? [file, line]
         ctxt = @monitor.synchronize {            
-          Context.new(event, file, line, id, binding, b, output)
+          @user_threads[Thread.current] = Context.new(event, file, line, id, binding, b, output)
         }
         svr.logger.debug(ctxt.inspect)
         release 1, ctxt

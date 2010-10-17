@@ -111,6 +111,15 @@ function stepProc(command) {
     }
     setLine(files[data.file], data.line, command, data['break']);
     $('#vars').tabs('load', $('#vars').tabs('option', 'selected'));
+    var s = '<table class="vars"><tr><th>br</th><th>File</th><th>Line</th><th>Status</th></tr>';
+    for (var i = 0; i < data.threads.length; i++) {
+      if (data.threads.length > 1) {
+      }
+      var t = data.threads[i][0];
+      s += '<tr><td>' + (t.self ? '*' : '') + '</td><td>' + t.file + '</td><td class="numtd">' + t.line
+           + '</td><td>' + t.status + '</td></tr>';
+    }
+    $('#tlist')[0].innerHTML = s + '</table>';
     var span = document.createElement('span');
     span.innerHTML = data.stdout;
     $('#stdout')[0].appendChild(span);
@@ -219,13 +228,17 @@ $(document).ready(function() {
     <div id="Global_Vars"></div>    
   </div>
 </div>
-<div style="clear: both;">
+<div class="proc-pane">
   <div id="output">
     <span id="stdout"></span>
   </div>
+  <div id="threads">
+    <span id="tlist"></span>
+  </div>
+<div class="footer">    
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Wed Oct 13 11:09:42 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Sun Oct 17 19:05:48 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

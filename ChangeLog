@@ -1,3 +1,12 @@
+Sun Oct 17 19:09:00 2010 arton
+ * ruined/ruinmain.rb
+	version 0.0.5 => 0.0.8	
+	retuens thread-list
+ * ruined/css/ruin.css	
+	move style from main.html to here
+ * ruined/html/main.html
+	add thread list pane.
+	adjust some styles.
 Thu Oct 14 20:14:00 2010 arton	
  * ruined/ruinmain.rb
 	version 0.0.5 => 0.0.7

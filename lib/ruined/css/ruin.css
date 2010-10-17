@@ -9,6 +9,10 @@ pre {
   margin-top: 0.5em;
 }
 
+td.numtd {
+  text-align: right;
+}
+
 table {
   border-spacing: 0;
 }
@@ -25,9 +29,11 @@ table.vars td {
 div.list-pane {
   float: left; 
   width: 60%;
+  height: 60%;
 }
 
-div.vars-pnae {
+div.vars-pane {
+  height: 60%;
 }
 
 div#button-panel {
@@ -52,7 +58,25 @@ div#vars {
   height: 520px;
 }
 
+div.proc-pane {
+  clear: both;
+  height: 30%;
+}
+
 div#output {
   overflow: scroll;
   height: 120px;
+  float: left; 
+  width: 60%;
+}
+
+div#threads {
+  overflow: scroll;
+  height: 120px;
+}
+
+div.footer {
+  clear: both;
+  margin-bottom: 0;
+  height: 5%;
 }
