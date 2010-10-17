@@ -1,6 +1,10 @@
+Sun Oct 17 19:24:00 2010 arton	
+ * ruined/ruinmain.rb
+	version 0.0.8 => 0.0.9
+	correct thread status (exchange nil and false)
 Sun Oct 17 19:09:00 2010 arton
  * ruined/ruinmain.rb
-	version 0.0.5 => 0.0.8	
+	version 0.0.7 => 0.0.8	
 	retuens thread-list
  * ruined/css/ruin.css	
 	move style from main.html to here

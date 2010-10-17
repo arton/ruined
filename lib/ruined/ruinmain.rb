@@ -9,7 +9,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.8'
+  RUINED_VERSION = '0.0.9'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
@@ -306,9 +306,9 @@ EOD
   
   def self.status_to_s(s)
     if s.nil?
-      'dead'
-    elsif s == false
       'aborted'
+    elsif s == false
+      'dead'
     else
       s
     end
