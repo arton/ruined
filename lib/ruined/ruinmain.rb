@@ -9,7 +9,7 @@ require 'monitor'
 require 'stringio'
 
 module Ruined
-  RUINED_VERSION = '0.0.9'
+  RUINED_VERSION = '0.1.0'
   
   @queue = [Queue.new, Queue.new]
   @breakpoints = []
@@ -77,14 +77,16 @@ module Ruined
       m = %r|/debug/([^/?]+)/?([^?]*).*\Z|.match(req.unparsed_uri)
       if m
         @response = res
+        @request = req
         res.body = __send__(m[1].to_sym, *(m[2].split('/').map{|x|URI.decode(x)}))
       else
         bye(res)        
       end
       @response = nil
+      @request = nil
     end
 
-    attr_reader :response
+    attr_reader :response, :request
 
     def break(*a)
       if a.size < 3
@@ -122,11 +124,15 @@ module Ruined
     end
         
     def file(*a)
-      r = '<table>'
-      File.open(a.join('/')).each_line do |line|
-        r << "<tr><td><pre>#{escape(line)}</pre></td></tr>"
-      end.close
-      r + '</table>'
+      file = a.join('/')
+      request.accept.each do |a|
+        if a =~ /html/i
+          break
+        elsif a =~ %r|text/plain|i
+          return Ruined::to_utf8(IO.read(a))
+        end
+      end
+      to_html(file)
     end
     
     def locals(*a)
@@ -164,7 +170,8 @@ module Ruined
     def create_varlist(t)
       s = '<table class="vars"><tr><th>Name</th><th>Value</th></tr>'
       t.each do |e|
-        s << "<tr><td>#{e[:name]}</td><td class=\"var-value\">#{escape(e[:value].inspect)}</td></tr>"
+        v = Ruined.to_utf8(e[:value].inspect)
+        s << "<tr><td>#{e[:name]}</td><td class=\"var-value\">#{escape(v)}</td></tr>"
       end
       s + '</table>'
     end
@@ -175,6 +182,14 @@ module Ruined
       else
         Ruined.set(a[0], a[1..-1].join('/')).to_s
       end
+    end
+    
+    def to_html(file)
+      r = '<table>'
+      File.open(file).each_line do |line|
+        r << "<tr><td><pre>#{escape(Ruined::to_utf8(line))}</pre></td></tr>"
+      end.close
+      r + '</table>'
     end
     
     def bye(res)
@@ -265,9 +280,13 @@ EOD
     out.pos = 0
     ret = ''
     out.each_line do |x|
-      ret << "#{HTMLUtils.escape(x.chomp)}<br/>"
+      ret << "#{HTMLUtils.escape(to_utf8(x.chomp))}<br/>"
     end
     ret
+  end
+  
+  def self.to_utf8(s)
+    (s.encoding != Encoding::UTF_8) ? s.encode(Encoding::UTF_8) : s
   end
   
   def self.add_unbreakable(t)
