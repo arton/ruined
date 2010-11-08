@@ -14,10 +14,11 @@ features:
  - self's instance variables viewer
  - stdout viewer
  - change variable's value
+ - editing source and save (save & restart, save & continue, discard change)
 
  todo:
   - more inspection 
-  - editing source and save
+  - start with none-existing file (using shell or bat)
 
 usage:
 
