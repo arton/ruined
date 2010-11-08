@@ -12,24 +12,25 @@ var files = new Object();
 var priorLine = { line: null, index: null };
 var interval = 1000;
 var contTimer = null;
+var editing = null;
 function addFile(name, line, command) {
   var a = name.split('/');
   $('#lists').tabs('add' , '/debug/file/' + name , a[a.length - 1]);
   var index = $('#lists').tabs('length') - 1;
   $('#lists').tabs('select', index);
   $('td').bind('click', function(ev) {
+    var bgclr = '';
     var sub = 'false';
     if (ev.currentTarget.style.backgroundColor == '') {
       sub = 'true';
+      bgclr = 'saddlebrown';
+    } else if (ev.currentTarget.style.backgroundColor == 'yellow') {
+      sub = 'true';
+      bgclr = 'olive';
+    } else if (ev.currentTarget.style.backgroundColor == 'olive') {
+      bgclr = 'yellow';
     }
-    var index = $('#lists').tabs('option', 'selected');
-    var key, file;
-    for (key in files) {
-      if (files[key] == index) {
-        file = key;
-        break;
-      }
-    }
+    var file = selectFile();
     if (file != null) {
       var line = 0;
       var list = $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td');
@@ -40,10 +41,8 @@ function addFile(name, line, command) {
         }
       }
       $.get('/debug/break/' + sub + '/' + file + '/' + line, function() {
-        var bgclr = '';
         var clr = '';
         if (sub == 'true') {
-          bgclr = 'saddlebrown';
           clr = 'white';
         }
         ev.currentTarget.style.backgroundColor = bgclr;
@@ -53,11 +52,24 @@ function addFile(name, line, command) {
   });
   return index;
 }
+function selectFile() {
+  var index = $('#lists').tabs('option', 'selected');
+  var key, file;
+  for (key in files) {
+    if (files[key] == index) {
+      file = key;
+      break;
+    }
+  }
+  return file;
+}
 function changeTab(index) {
   $('#lists').tabs('select', index);
 }
 function lineColor(command, brk) {
-  if (command == 'cont' && !brk) {
+  if (brk) {
+    return 'olive';
+  } else if (command == 'cont') {
     return 'aquamarine';
   }
   return 'yellow';
@@ -66,6 +78,7 @@ function stopRun() {
   clearTimeout(contTimer);
   contTimer = null;
   $('#run').button('option', 'label', 'run');
+  $('#edit').button('option', 'disabled', false);
 }
 function setLine(index, line, command, brk) {
   if (line > 0) {
@@ -85,7 +98,24 @@ function setLine(index, line, command, brk) {
   style.color = '';
   $('#ui-tabs-' + (index * 2 + 2) + ' > table > tbody > tr > td')[line].scrollIntoView(true);
 }
+function runProc(command) {
+  if (isEditMode()) {
+    saveProc(command, false);
+  } else {
+    if (contTimer == null) {
+      contProc('cont');
+      $('#run').button('option', 'label', 'stop');
+      $('#edit').button('option', 'disabled', true);
+    } else {
+      stopRun();
+    }
+  }
+}
 function stepProc(command) {
+  if (isEditMode()) {
+    saveProc(command, true);
+    return;
+  }
   $.getJSON('/debug/' + command, function(data) {
     if (data == null || data.file == null) {
       if (contTimer != null) stopRun();
@@ -131,6 +161,65 @@ function stepProc(command) {
 function contProc(command) {
   stepProc(command);
   contTimer = setTimeout('contProc("' + command + '");', interval);
+}
+function editProc(command) {
+  var emode = isEditMode();
+  if (emode) {
+    var root = $('#ui-tabs-' + (editing * 2 + 2))[0];
+    if (root.codeTable) {
+      root.replaceChild(root.codeTable, root.childNodes(0));
+    }
+  } else {
+    editing = $('#lists').tabs('option', 'selected');
+    var root = $('#ui-tabs-' + (editing * 2 + 2))[0];
+    $.get('/debug/file/' + selectFile(), function(data) {
+      root.codeTable = root.childNodes(0);
+      var txa = document.createElement('textarea');
+      txa.style.fontSize = '11pt';
+      txa.rows = 22;
+      txa.cols = 68;
+      txa.innerHTML = data;
+      root.replaceChild(txa, root.codeTable);
+      root.originalCode = data;
+    }, 'text');
+  }  
+  editMode(emode);
+}
+function saveProc(command, rst) {
+  var root = $('#ui-tabs-' + (editing * 2 + 2))[0];
+  var newText = root.childNodes(0).innerHTML;
+  var anew = newText.split(/\r?\n/)
+  var aorg = root.originalCode.split(/\r?\n/)
+  if (anew.length == aorg.length && isSameArray(anew, aorg)) {
+    alert('no save is needed');
+  } else {
+    $.post('/debug/file/' + selectFile(), newText, function(data) {
+      if (rst) {
+        document.location.href = 'http://localhost.:8384/restart';
+      }
+    }, 'text');
+  }  
+  editMode(isEditMode());
+  if (root.codeTable) {
+    root.replaceChild(root.codeTable, root.childNodes(0));
+  }
+}
+function isSameArray(a0, a1) {
+  // assert a0.length == a1.length
+  for (var i = 0; i < a0.length; i++) {
+    if (a0[i] != a1[i]) return false;
+  }
+  return true;
+}
+function isEditMode() {
+  return $('#edit').button('option', 'label') == 'Disc';
+}
+function editMode(b) {
+  var btn = new Array('#step', '#run', '#edit');  
+  var label = (b) ? new Array('Step', 'Run', 'Edit') : new Array('Save Rst', 'Save Cont', 'Disc');
+  for (var i = 0; i < 3; i++) {  
+    $(btn[i]).button('option', 'label', label[i]);
+  }
 }
 function initTabs(elm) {
   elm.tabs();
@@ -179,16 +268,14 @@ $(document).ready(function() {
   $.ajaxSetup({cache: false});
 
   $('button').button();
-  $('#run').click(function() {
-    if (contTimer == null) {
-      contProc('cont');
-      $('#run').button('option', 'label', 'stop');
-    } else {
-      stopRun();
-    }
-  });
   $('#step').click(function() {
     stepProc('step');
+  });
+  $('#run').click(function() {
+    runProc('run');
+  });
+  $('#edit').click(function() {
+    editProc('edit');
   });
   $('#waiting').ajaxError(function() {
     if (contTimer != null) {
@@ -205,6 +292,7 @@ $(document).ready(function() {
     <div class="console">
       <button id="step">Step</button>
       <button id="run">Run</button>
+      <button id="edit">Edit</button>
     </div>
   </div>
   <div id="speed-panel">
@@ -239,6 +327,6 @@ $(document).ready(function() {
   <hr>
   <div id="waiting"></div>
   <address id="ruby-platform"></address>
-  <!-- hhmts start --> Last modified: Sun Oct 17 19:05:48 +0900 2010 <!-- hhmts end -->
+  <!-- hhmts start --> Last modified: Tue Nov 09 02:37:01 +0900 2010 <!-- hhmts end -->
 </div>    
 </body> </html>

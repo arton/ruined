@@ -45,7 +45,7 @@ else
     end
     sleep(1.5)
     run_app
-    res.body = '<html>restart</html>'
+    res.body = IO::read("#{File.dirname(__FILE__)}/ruined/html/waitclient.html")
   end
   svr.mount_proc('/quit') do |req, res|
     begin

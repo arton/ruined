@@ -7,6 +7,7 @@ require 'json'
 require 'thread'
 require 'monitor'
 require 'stringio'
+require 'fileutils'
 
 module Ruined
   RUINED_VERSION = '0.1.0'
@@ -68,7 +69,11 @@ module Ruined
     include WEBrick::HTMLUtils
     def service(req, res)
       if Ruined.local_call?(req.addr)
+        @response = res
+        @request = req
         super
+        @response = nil
+        @request = nil
       else
         bye(res)
       end
@@ -76,14 +81,18 @@ module Ruined
     def do_GET(req, res)
       m = %r|/debug/([^/?]+)/?([^?]*).*\Z|.match(req.unparsed_uri)
       if m
-        @response = res
-        @request = req
         res.body = __send__(m[1].to_sym, *(m[2].split('/').map{|x|URI.decode(x)}))
       else
         bye(res)        
       end
-      @response = nil
-      @request = nil
+    end
+    def do_POST(req, res)
+      m = %r|/debug/([^/?]+)/?([^?]*).*\Z|.match(req.unparsed_uri)
+      if m && m[1] == 'file'
+        res.body = __send__(m[1].to_sym, *(m[2].split('/').map{|x|URI.decode(x)}))
+      else
+        bye(res)        
+      end
     end
 
     attr_reader :response, :request
@@ -125,14 +134,28 @@ module Ruined
         
     def file(*a)
       file = a.join('/')
-      request.accept.each do |a|
-        if a =~ /html/i
-          break
-        elsif a =~ %r|text/plain|i
-          return Ruined::to_utf8(IO.read(a))
+      if request.request_method == 'GET'
+        request.accept.each do |accept|
+          if accept =~ /html/i
+            break
+          elsif accept =~ %r|text/plain|i
+            File.open(file) do |f|
+              return Ruined::to_utf8(f.read)
+            end
+          end
         end
-      end
-      to_html(file)
+        to_html(file)
+      else
+        # TODO: newline and charset justify
+        # wb is workaround for inhibit to put addition \r
+        File.open("#{file}.new", 'wb') do |f|
+          f.write(request.body)
+        end
+        FileUtils.cp file, "#{file}.bak", :verbose => true
+        FileUtils.cp "#{file}.new", file, :verbose => true
+        FileUtils.rm "#{file}.new"
+        "save #{file}"
+      end  
     end
     
     def locals(*a)

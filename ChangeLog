@@ -1,3 +1,10 @@
+Tue Nov 9 2:42:30 2010 arton
+ * ruined/ruinmain.rb
+	write file with binary mode for voiding bad conversion (\r\n -> \r\r\n)
+ * uined.rb
+	return waitcline.html if restart
+ * ruined/html/main.html
+	implements edit command
 Mon Oct 25 22:41:20 2010 arton
  * ruined/ruinmain.rb
 	version 0.0.9 => 0.1.0

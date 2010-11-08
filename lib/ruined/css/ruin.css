@@ -38,13 +38,13 @@ div.vars-pane {
 
 div#button-panel {
   float: left;
-  width: 40%;
+  width: 65%;
   height: 40px
 }
 
 div#speed-panel {
   float: left;
-  width: 50%; 
+  width: 30%; 
   height: 40px
 }
 
@@ -72,7 +72,8 @@ div#output {
 
 div#threads {
   overflow: scroll;
-  height: 120px;
+  height: 100px;
+  padding: 10px;
 }
 
 div.footer {
